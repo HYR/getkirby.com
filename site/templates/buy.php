@@ -1,5 +1,11 @@
 <?php layout() ?>
 
+<style>
+.sale {
+  color: var(--color-yellow-700);
+}
+</style>
+
 <article>
   <div class="columns mb-42" style="--columns-sm: 1; --columns-md: 1; --columns-lg: 2; --gap: 3rem">
 
@@ -8,7 +14,8 @@
     </h1>
 
     <a href="https://pay.paddle.com/checkout/499826" class="pricing highlight bg-white shadow-xl">
-      <p class="h1 mb-3 price invisible">99 € per site</p>
+      <p class="mb-1 sale font-mono font-bold hidden">ON SALE: FROM <span>€99</span></p>
+      <p class="h1 mb-3 price invisible"><span>€99</span> per site</p>
       <div class="columns" style="--columns: 2; --gap: var(--spacing-12)">
         <div class="flex flex-column justify-between">
           <p class="h6 mb-12 vat invisible">+ VAT if applicable</p>
@@ -86,30 +93,37 @@
       <?php endforeach ?>
     </ul>
   </section>
-
 </article>
 
-<script src="https://cdn.paddle.com/paddle/paddle.js"></script>
 <script type="text/javascript">
-  Paddle.Setup({
-    vendor: 1129,
-  });
+function paddle_price(data) {
+    const product      = data.response.products[0];
+    const currency     = product.currency;
+    const currentPrice = product.price.net;
+    const listPrice    = product.list_price.net;
+    const isSale       = currentPrice !== listPrice;
 
-  Paddle.Product.Prices(499826, function(prices) {
-    let price = prices.price.net.replace(".00", "").replace("US$", "$");
-    let priceElement = document.querySelector(".price");
-    let vatElement = document.querySelector(".vat");
+    const formatter = (price) => {
+      return new Intl.NumberFormat("en", { style: "currency", currencyDisplay: "narrowSymbol", currency: currency, minimumFractionDigits: 0 }).format(price)
+    };
 
-    priceElement.innerText = `${price} per site`;
-    priceElement.classList.remove("invisible");
+    const $price = document.querySelector(".price");
+    const $vat   = document.querySelector(".vat");
+    const $sale  = document.querySelector(".sale");
 
-    vatElement.classList.remove("invisible");
-  });
+    $price.firstElementChild.innerText = formatter(currentPrice);
+    $price.classList.remove("invisible");
+    $vat.classList.remove("invisible");
 
-  document.querySelector(".pricing").addEventListener("click", function (e) {
-    e.preventDefault();
-    Paddle.Checkout.open({
-      product: 499826
-    });
-  }, false);
+    if (isSale) {
+      $sale.firstElementChild.innerText = formatter(listPrice);
+      $sale.classList.remove("hidden");
+    }
+}
+</script>
+<script src="https://checkout.paddle.com/api/2.0/prices?product_ids=499826&callback=paddle_price"></script>
+
+<script type="module">
+  import { Checkout } from "<?= url('/assets/js/components/paddle.js') ?>";
+  new Checkout();
 </script>
