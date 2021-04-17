@@ -14,7 +14,7 @@
     </h1>
 
     <a href="https://pay.paddle.com/checkout/499826" class="pricing highlight bg-white shadow-xl">
-      <p class="mb-1 sale font-mono font-bold hidden">ON SALE: FROM <span>€99</span></p>
+      <p class="mb-1 sale font-mono hidden">ON SALE: FROM <span>€99</span></p>
       <p class="h1 mb-3 price invisible"><span>€99</span> per site</p>
       <div class="columns" style="--columns: 2; --gap: var(--spacing-12)">
         <div class="flex flex-column justify-between">
@@ -103,20 +103,28 @@ function paddle_price(data) {
     const listPrice    = product.list_price.net;
     const isSale       = currentPrice !== listPrice;
 
-    const formatter = (price) => {
-      return new Intl.NumberFormat("en", { style: "currency", currencyDisplay: "narrowSymbol", currency: currency, minimumFractionDigits: 0 }).format(price)
-    };
+    // Try to use formatter with narrow currency symbol,
+    // fall back to normal symbol if not supported by browser
+    let formatter;
+    try {
+      formatter = new Intl.NumberFormat("en", { style: "currency", currency, currencyDisplay: "narrowSymbol", minimumFractionDigits: 0 });
+    } catch (e) {
+      if (e.constructor !== RangeError) {
+        throw e;
+      }
+      formatter = new Intl.NumberFormat("en", { style: "currency", currency, minimumFractionDigits: 0});
+    }
 
     const $price = document.querySelector(".price");
     const $vat   = document.querySelector(".vat");
     const $sale  = document.querySelector(".sale");
 
-    $price.firstElementChild.innerText = formatter(currentPrice);
+    $price.firstElementChild.innerText = formatter.format(currentPrice);
     $price.classList.remove("invisible");
     $vat.classList.remove("invisible");
 
     if (isSale) {
-      $sale.firstElementChild.innerText = formatter(listPrice);
+      $sale.firstElementChild.innerText = formatter.format(listPrice);
       $sale.classList.remove("hidden");
     }
 }
